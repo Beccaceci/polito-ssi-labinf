@@ -1,0 +1,62 @@
+services:
+  # Target Server (Alice): hosts lab services (Apache, Exim4, custom daemons)
+  alice:
+    build:
+      context: ./targets/lab01
+      dockerfile: Dockerfile
+    container_name: labinf_alice
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      secnet:
+        ipv4_address: 10.0.2.10
+    restart: unless-stopped
+
+  # Client (Bob): legitimate Kali client node
+  bob:
+    image: ${LABINF_KALI_IMAGE:-ghcr.io/Beccaceci/polito-ssi-labinf-kali:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    container_name: labinf_bob
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      secnet:
+        ipv4_address: 10.0.2.20
+    restart: unless-stopped
+
+  # Attacker / Analyst (Chuck): Kali security suite node
+  chuck:
+    image: ${LABINF_KALI_IMAGE:-ghcr.io/Beccaceci/polito-ssi-labinf-kali:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    container_name: labinf_chuck
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      - net.ipv4.ip_forward=1
+    networks:
+      secnet:
+        ipv4_address: 10.0.2.30
+    restart: unless-stopped
+
+networks:
+  secnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.2.0/24
+          gateway: 10.0.2.1

@@ -1,0 +1,51 @@
+FROM kalilinux/kali-rolling:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Core Network & Pentesting Tools
+    ettercap-text-only \
+    nmap \
+    iproute2 \
+    net-tools \
+    iputils-ping \
+    curl \
+    wget \
+    dsniff \
+    tcpdump \
+    tshark \
+    lynx \
+    s-nail \
+    dnsutils \
+    netcat-openbsd \
+    ftp \
+    procps \
+    nano \
+    sudo \
+    python3 \
+    # Lab 02 & 03: Crypto & Digest Tools
+    openssl \
+    hashdeep \
+    hexedit \
+    p7zip-full \
+    # Lab 04: Firewall & Netfilter Tools
+    iptables \
+    iptables-persistent \
+    nftables \
+    conntrack \
+    ulogd2 \
+    # Lab 05: IPsec & Tunneling Tools
+    strongswan \
+    strongswan-swanctl \
+    libstrongswan-extra-plugins \
+    ptunnel \
+    httptunnel \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash -G sudo kali && \
+    echo "kali:kali" | chpasswd && \
+    echo "kali ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+WORKDIR /home/kali
+USER kali
+CMD ["sleep", "infinity"]

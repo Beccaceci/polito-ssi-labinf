@@ -1,0 +1,16 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux & Editor artifacts
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Docker build cache & temporary logs
+.tmp_build/
+*.log
+docker-compose.override.yml
