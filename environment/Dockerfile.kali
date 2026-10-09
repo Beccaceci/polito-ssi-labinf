@@ -2,6 +2,8 @@ FROM kalilinux/kali-rolling:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+RUN echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core Network & Pentesting Tools
     ettercap-text-only \
@@ -40,11 +42,50 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libstrongswan-extra-plugins \
     ptunnel \
     httptunnel \
+    # Web GUI & Desktop Tools (Optional on-demand access on port 6080)
+    tigervnc-standalone-server \
+    novnc \
+    websockify \
+    openbox \
+    xterm \
+    wireshark \
     && rm -rf /var/lib/apt/lists/*
 
-RUN useradd -m -s /bin/bash -G sudo kali && \
+RUN useradd -m -s /bin/bash -G sudo,wireshark kali && \
     echo "kali:kali" | chpasswd && \
     echo "kali ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Web GUI Helper Launcher
+RUN printf '#!/bin/bash\n\
+case "$1" in\n\
+  start|"")\n\
+    if pgrep -x "Xtigervnc" >/dev/null; then\n\
+      echo "[!] Web GUI is already running."\n\
+    else\n\
+      mkdir -p /home/kali/.vnc /home/kali/.config/openbox\n\
+      vncserver :1 -geometry 1366x768 -depth 24 -SecurityTypes None -- /usr/bin/openbox-session >/tmp/vnc.log 2>&1 &\n\
+      sleep 2\n\
+      websockify --web=/usr/share/novnc/ 6080 localhost:5901 >/tmp/novnc.log 2>&1 &\n\
+      sleep 1\n\
+    fi\n\
+    echo "[+] Web GUI active at http://localhost:6080/vnc.html"\n\
+    ;;\n\
+  stop)\n\
+    vncserver -kill :1 2>/dev/null || true\n\
+    pkill -f websockify 2>/dev/null || true\n\
+    echo "[+] Web GUI stopped."\n\
+    ;;\n\
+  status)\n\
+    if pgrep -x "Xtigervnc" >/dev/null; then\n\
+      echo "[+] Web GUI is RUNNING on http://localhost:6080/vnc.html"\n\
+    else\n\
+      echo "[-] Web GUI is NOT running."\n\
+    fi\n\
+    ;;\n\
+  *)\n\
+    echo "Usage: labinf-gui [start|stop|status]"\n\
+    ;;\n\
+esac\n' > /usr/local/bin/labinf-gui && chmod +x /usr/local/bin/labinf-gui
 
 WORKDIR /home/kali
 USER kali

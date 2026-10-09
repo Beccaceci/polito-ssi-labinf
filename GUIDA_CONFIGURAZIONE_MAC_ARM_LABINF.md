@@ -23,7 +23,6 @@ La cartella `LABS/` include un gestore d'ambiente automatizzato pronto all'uso:
 
 1. **Avvio dell'infrastruttura**:
    ```bash
-   cd LABS
    ./labinf.sh start
    ```
 2. **Accesso immediato alle shell dei nodi**:

@@ -11,6 +11,8 @@ services:
       - NET_RAW
     sysctls:
       - net.ipv4.ip_forward=1
+    volumes:
+      - ../workspace:/workspace:rw
     networks:
       secnet:
         ipv4_address: 10.0.2.10
@@ -18,7 +20,7 @@ services:
 
   # Client (Bob): legitimate Kali client node
   bob:
-    image: ${LABINF_KALI_IMAGE:-ghcr.io/Beccaceci/polito-ssi-labinf-kali:latest}
+    image: ${LABINF_KALI_IMAGE:-ghcr.io/beccaceci/polito-ssi-labinf-kali:latest}
     build:
       context: .
       dockerfile: Dockerfile.kali
@@ -29,6 +31,8 @@ services:
       - NET_RAW
     sysctls:
       - net.ipv4.ip_forward=1
+    volumes:
+      - ../workspace:/home/kali/workspace:rw
     networks:
       secnet:
         ipv4_address: 10.0.2.20
@@ -36,7 +40,7 @@ services:
 
   # Attacker / Analyst (Chuck): Kali security suite node
   chuck:
-    image: ${LABINF_KALI_IMAGE:-ghcr.io/Beccaceci/polito-ssi-labinf-kali:latest}
+    image: ${LABINF_KALI_IMAGE:-ghcr.io/beccaceci/polito-ssi-labinf-kali:latest}
     build:
       context: .
       dockerfile: Dockerfile.kali
@@ -47,6 +51,10 @@ services:
       - NET_RAW
     sysctls:
       - net.ipv4.ip_forward=1
+    ports:
+      - "6080:6080" # Web GUI / noVNC
+    volumes:
+      - ../workspace:/home/kali/workspace:rw
     networks:
       secnet:
         ipv4_address: 10.0.2.30

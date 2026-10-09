@@ -1,0 +1,2 @@
+# Workspace directory shared between host OS and Docker containers.
+# Place scripts, wordlists, or analyze captured .pcap files here.

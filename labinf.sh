@@ -34,11 +34,13 @@ cmd_start() {
   echo -e "    ${CYAN}• Alice${RESET} (Target Server):   ${BOLD}10.0.2.10${RESET} (Apache 80, Exim4 25, Mock 2121/1337)"
   echo -e "    ${CYAN}• Bob${RESET}   (Client):          ${BOLD}10.0.2.20${RESET} (Kali Linux)"
   echo -e "    ${CYAN}• Chuck${RESET} (Attaccante/MITM):  ${BOLD}10.0.2.30${RESET} (Kali Linux Suite)"
+  echo -e "    ${CYAN}• Workspace Condiviso:${RESET}     ${BOLD}./workspace${RESET} (condiviso con tutti i container)"
   echo ""
   echo -e "Accesso rapido ai terminali:"
   echo -e "    ${BOLD}./labinf.sh chuck${RESET}   -> Shell per Chuck"
   echo -e "    ${BOLD}./labinf.sh bob${RESET}     -> Shell per Bob"
   echo -e "    ${BOLD}./labinf.sh alice${RESET}   -> Shell per Alice"
+  echo -e "    ${BOLD}./labinf.sh gui${RESET}     -> Avvia Web GUI (Wireshark) su http://localhost:6080"
 }
 
 cmd_stop() {
@@ -117,6 +119,26 @@ cmd_read_email() {
   docker exec -it labinf_alice cat /var/mail/alice
 }
 
+cmd_gui() {
+  check_docker || return 1
+  echo -e "${BLUE}[+] Avvio Web GUI Desktop (noVNC + Wireshark) su Chuck...${RESET}"
+  docker exec -d labinf_chuck /usr/local/bin/labinf-gui start
+  sleep 2
+  echo -e "${GREEN}${BOLD}[+] Web GUI attiva!${RESET}"
+  echo -e "    Apri nel tuo browser: ${BOLD}http://localhost:6080/vnc.html${RESET}"
+  if command -v open >/dev/null 2>&1; then
+    open "http://localhost:6080/vnc.html" 2>/dev/null || true
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "http://localhost:6080/vnc.html" 2>/dev/null || true
+  fi
+}
+
+cmd_gui_stop() {
+  check_docker || return 1
+  echo -e "${YELLOW}[+] Arresto Web GUI Desktop su Chuck...${RESET}"
+  docker exec -it labinf_chuck /usr/local/bin/labinf-gui stop
+}
+
 # Interactive TUI Menu
 show_menu() {
   while true; do
@@ -125,18 +147,19 @@ show_menu() {
     echo -e "   ${BOLD}POLITECNICO DI TORINO — SICUREZZA DEI SISTEMI INFORMATIVI${RESET}"
     echo -e "             ${MAGENTA}LABINF Docker Multi-Node Environment${RESET}"
     echo -e "${CYAN}==================================================================${RESET}"
-    echo -e " ${GREEN}[1]${RESET} 🚀 Avvia ambiente (Alice, Bob, Chuck)"
-    echo -e " ${RED}[2]${RESET} 🔴 Shell Chuck (Attaccante / Kali Linux)"
-    echo -e " ${BLUE}[3]${RESET} 🔵 Shell Bob (Client legittimo)"
-    echo -e " ${CYAN}[4]${RESET} 🟢 Shell Alice (Server target)"
-    echo -e " ${YELLOW}[5]${RESET} 🩺 Verifica strumenti e connettività"
-    echo -e " ${MAGENTA}[6]${RESET} 📊 Stato dei container e indirizzi IP"
-    echo -e " ${BOLD}[7]${RESET} 🔨 Compila / Scarica immagini (Build/Pull)"
-    echo -e " ${YELLOW}[8]${RESET} 🛑 Arresta ambiente"
-    echo -e " ${CYAN}[9]${RESET} ✉️  Leggi casella email di Alice (Lab 01)"
-    echo -e " ${RED}[0]${RESET} ❌ Esci"
+    echo -e " ${GREEN}[1]${RESET}  🚀 Avvia ambiente (Alice, Bob, Chuck)"
+    echo -e " ${RED}[2]${RESET}  🔴 Shell Chuck (Attaccante / Kali Linux)"
+    echo -e " ${BLUE}[3]${RESET}  🔵 Shell Bob (Client legittimo)"
+    echo -e " ${CYAN}[4]${RESET}  🟢 Shell Alice (Server target)"
+    echo -e " ${YELLOW}[5]${RESET}  🩺 Verifica strumenti e connettività"
+    echo -e " ${MAGENTA}[6]${RESET}  📊 Stato dei container e indirizzi IP"
+    echo -e " ${BOLD}[7]${RESET}  🔨 Compila / Scarica immagini (Build/Pull)"
+    echo -e " ${YELLOW}[8]${RESET}  🛑 Arresta ambiente"
+    echo -e " ${CYAN}[9]${RESET}  ✉️  Leggi casella email di Alice (Lab 01)"
+    echo -e " ${MAGENTA}[10]${RESET} 🌐 Avvia Web GUI (Wireshark da browser: http://localhost:6080)"
+    echo -e " ${RED}[0]${RESET}  ❌ Esci"
     echo -e "${CYAN}==================================================================${RESET}"
-    read -rp " Seleziona un'opzione [0-9]: " choice
+    read -rp " Seleziona un'opzione [0-10]: " choice
     echo ""
 
     case "$choice" in
@@ -149,6 +172,7 @@ show_menu() {
       7) cmd_build ;;
       8) cmd_stop ;;
       9) cmd_read_email ;;
+      10) cmd_gui ;;
       0) echo -e "${GREEN}Arrivederci!${RESET}"; exit 0 ;;
       *) echo -e "${RED}[!] Scelta non valida.${RESET}" ;;
     esac
@@ -166,6 +190,8 @@ case "$1" in
   build)      cmd_build ;;
   pull)       cmd_pull ;;
   verify)     cmd_verify ;;
+  gui)        cmd_gui ;;
+  gui-stop)   cmd_gui_stop ;;
   check)      check_docker && echo -e "${GREEN}[+] Docker daemon attivo e raggiungibile.${RESET}" ;;
   chuck)      cmd_shell chuck ;;
   bob)        cmd_shell bob ;;
@@ -174,7 +200,7 @@ case "$1" in
   menu|"")    show_menu ;;
   *)
     echo "LABINF Environment Manager (Politecnico di Torino)"
-    echo "Uso: ./labinf.sh [start|stop|restart|status|build|pull|verify|check|chuck|bob|alice|read_email|menu]"
+    echo "Uso: ./labinf.sh [start|stop|restart|status|build|pull|verify|gui|gui-stop|check|chuck|bob|alice|read_email|menu]"
     echo "     Se eseguito senza argomenti, apre il menu interattivo."
     exit 1
     ;;
