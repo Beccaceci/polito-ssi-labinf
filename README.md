@@ -30,29 +30,38 @@ Select your operating system to jump directly to the step-by-step setup instruct
 
 ## 🏗️ Core Architecture & Topology
 
-### Official LABINF Scenario vs. Simulation Architecture
+### Friends and Enemies: The Kurose & Ross Scenario on Docker
 
-In the official course guidelines (*Istruzioni per il laboratorio*), the laboratory is originally configured as a multi-node virtual local area network (VLAN) connected through a **Virtual Switch (vSwitch)** behind a NAT gateway:
+To provide maximum pedagogical clarity, the simulation environment is designed and illustrated following the classic **Jim Kurose & Keith Ross** network security paradigm (*Computer Networking: A Top-Down Approach*), mapping the roles of **Alice**, **Bob**, and **Chuck** (*Trudy*) directly onto the laboratory infrastructure:
 
 <p align="center">
-  <img src="assets/labinf_topology.png" alt="Official LABINF Virtual Switch Topology" width="380" />
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/mitm_scenario.png" alt="Course MITM Attack Model" width="460" />
+  <img src="assets/kurose_mitm_scenario.png" alt="Friends and Enemies: Alice, Bob, Chuck (Kurose and Ross Style)" width="850" />
 </p>
 <p align="center">
-  <em>Figure 1: (Left) Official LABINF network architecture connecting Kali nodes to a virtual switch behind NAT; (Right) Course Man-in-the-Middle attack model between Node A (Alice), Node B (Bob), and Node C (Chuck) across intermediate network device '?'.</em>
+  <em>Figure 1: Complete simulation topology modeled in the iconic Kurose & Ross textbook style, mapping directly to the LABINF Docker subnet <code>10.0.2.0/24</code>.</em>
+</p>
+
+### Official LABINF Guidelines vs. Simulation Architecture
+
+In the official course guidelines (*Istruzioni per il laboratorio*), the laboratory is originally specified as a multi-node virtual local area network (VLAN) connected through a **Virtual Switch (vSwitch)** behind a NAT gateway:
+
+<p align="center">
+  <img src="assets/labinf_topology.png" alt="Official LABINF Virtual Switch Topology" width="460" />
+</p>
+<p align="center">
+  <em>Figure 2: Official LABINF multi-node layout (from course instructions) connecting Kali nodes to a virtual switch behind a NAT gateway.</em>
 </p>
 
 ### Direct Mapping to Course Laboratories
 
 Rather than launching 3 resource-heavy VirtualBox VMs (consuming 8–12 GB of RAM), this Docker stack reproduces the exact same network topology in less than **1.5 GB of RAM**:
 
-| Official Lab Node | Simulation Container | IP Address | Subnet / Role |
-| :--- | :--- | :--- | :--- |
-| **vSwitch & NAT** | Docker Bridge `secnet` | `10.0.2.1` | Isolated Layer 2 broadcast domain (`10.0.2.0/24`) |
-| **Node A (Kali 1)** | `labinf_alice` | `10.0.2.10` | Target Server (HTTP 80, SMTP 25, Mock FTP 2121, Challenge 1337) |
-| **Node B (Kali 2)** | `labinf_bob` | `10.0.2.20` | Legitimate Client (traffic generator) |
-| **Node C (Kali 3)** | `labinf_chuck` | `10.0.2.30` | Attacker / Security Analyst (Kali Linux Suite & sniffing tools) |
+| Official Lab Node | Kurose Character | Simulation Container | IP Address | Subnet / Role |
+| :--- | :---: | :--- | :--- | :--- |
+| **vSwitch & NAT** | 🌐 *vSwitch* | Docker Bridge `secnet` | `10.0.2.1` | Isolated Layer 2 broadcast domain (`10.0.2.0/24`) |
+| **Node A (Kali 1)** | <img src="assets/kurose_alice.png" width="36" alt="Alice" /> | `labinf_alice` | `10.0.2.10` | **Target Server** (Apache HTTP 80, Exim4 SMTP 25, Mock FTP 2121, Challenge 1337) |
+| **Node B (Kali 2)** | <img src="assets/kurose_bob.png" width="36" alt="Bob" /> | `labinf_bob` | `10.0.2.20` | **Legitimate Client** (traffic generator, browser & mail user agent) |
+| **Node C (Kali 3)** | <img src="assets/kurose_chuck.png" width="36" alt="Chuck" /> | `labinf_chuck` | `10.0.2.30` | **Attacker / Active MITM** (Ettercap ARP Poisoning, Nmap, Wireshark, iptables) |
 
 The simulation architecture is identical and invariant across all host operating systems. The nodes run inside isolated Docker containers connected by the isolated virtual bridge subnet `10.0.2.0/24`:
 
@@ -86,9 +95,9 @@ The simulation architecture is identical and invariant across all host operating
 
 ### Key Architectural Capabilities
 1. **Network Namespace Isolation (`secnet` 10.0.2.0/24)**:
-   - `alice` (`10.0.2.10`): Target server hosting Apache HTTP, Exim4 Mail Transfer Agent, and test daemons.
-   - `bob` (`10.0.2.20`): Legitimate client machine used to generate traffic.
-   - `chuck` (`10.0.2.30`): Security analyst and attacker workstation equipped with the full penetration testing and network security suite.
+   - <img src="assets/kurose_alice.png" width="22" valign="middle" alt="Alice" /> **Alice (`labinf_alice` — 10.0.2.10)**: Target server hosting Apache HTTP, Exim4 Mail Transfer Agent, and test daemons. Represents the destination or "secure receiver".
+   - <img src="assets/kurose_bob.png" width="22" valign="middle" alt="Bob" /> **Bob (`labinf_bob` — 10.0.2.20)**: Legitimate client machine used to generate traffic, log in to services, and send emails across the network.
+   - <img src="assets/kurose_chuck.png" width="22" valign="middle" alt="Chuck" /> **Chuck (`labinf_chuck` — 10.0.2.30)**: Security analyst and attacker workstation (the "Trudy" intruder in Kurose's model) equipped with the full penetration testing and network security suite.
 2. **True Kernel Privileges**:
    All nodes are provisioned with `NET_ADMIN`, `NET_RAW`, and `net.ipv4.ip_forward=1`. This allows authentic Layer 2 ARP cache spoofing, packet injection, bidirectional IP forwarding, and kernel-level firewall filtering (`iptables` / `nftables`).
 3. **Shared Host Volume (`./workspace`)**:
