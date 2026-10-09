@@ -6,6 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Politecnico di Torino](https://img.shields.io/badge/PoliTO-Information%20Systems%20Security-002D62)](https://www.polito.it/)
 
+<p align="center">
+  <img src="assets/polito_kali_banner.png" alt="Politecnico di Torino — Information Systems Security" width="850" />
+</p>
+
 A lightweight, multi-node containerized environment designed to accurately replicate the **LABINF** cybersecurity laboratories for the **Information Systems Security (01UDUOV)** course at **Politecnico di Torino** (Prof. Cataldo Basile).
 
 It enables students on **any operating system (macOS, Windows, Linux)** to perform real Layer 2 network attacks (ARP cache poisoning with Ettercap, packet sniffing, credential harvesting), firewalling experiments (`iptables`/`nftables`), cryptographic analysis, and `IPsec`/`TLS` tunneling without having to run 3 heavy virtual machines simultaneously.
@@ -26,7 +30,31 @@ Select your operating system to jump directly to the step-by-step setup instruct
 
 ## 🏗️ Core Architecture & Topology
 
-The simulation architecture is identical and invariant across all host operating systems. The nodes run inside isolated Docker containers connected by an isolated virtual bridge subnet `10.0.2.0/24`:
+### Official LABINF Scenario vs. Simulation Architecture
+
+In the official course guidelines (*Istruzioni per il laboratorio*), the laboratory is originally configured as a multi-node virtual local area network (VLAN) connected through a **Virtual Switch (vSwitch)** behind a NAT gateway:
+
+<p align="center">
+  <img src="assets/labinf_topology.png" alt="Official LABINF Virtual Switch Topology" width="380" />
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/mitm_scenario.png" alt="Course MITM Attack Model" width="460" />
+</p>
+<p align="center">
+  <em>Figure 1: (Left) Official LABINF network architecture connecting Kali nodes to a virtual switch behind NAT; (Right) Course Man-in-the-Middle attack model between Node A (Alice), Node B (Bob), and Node C (Chuck) across intermediate network device '?'.</em>
+</p>
+
+### Direct Mapping to Course Laboratories
+
+Rather than launching 3 resource-heavy VirtualBox VMs (consuming 8–12 GB of RAM), this Docker stack reproduces the exact same network topology in less than **1.5 GB of RAM**:
+
+| Official Lab Node | Simulation Container | IP Address | Subnet / Role |
+| :--- | :--- | :--- | :--- |
+| **vSwitch & NAT** | Docker Bridge `secnet` | `10.0.2.1` | Isolated Layer 2 broadcast domain (`10.0.2.0/24`) |
+| **Node A (Kali 1)** | `labinf_alice` | `10.0.2.10` | Target Server (HTTP 80, SMTP 25, Mock FTP 2121, Challenge 1337) |
+| **Node B (Kali 2)** | `labinf_bob` | `10.0.2.20` | Legitimate Client (traffic generator) |
+| **Node C (Kali 3)** | `labinf_chuck` | `10.0.2.30` | Attacker / Security Analyst (Kali Linux Suite & sniffing tools) |
+
+The simulation architecture is identical and invariant across all host operating systems. The nodes run inside isolated Docker containers connected by the isolated virtual bridge subnet `10.0.2.0/24`:
 
 ```text
                        +-------------------------+
