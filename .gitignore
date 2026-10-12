@@ -19,3 +19,8 @@ docker-compose.override.yml
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Ignored documentation and legacy files
+GUIDA_CONFIGURAZIONE_MAC_ARM_LABINF.md
+IMPLEMENTATION_PLAN.md
+Istruzioni per i laboratori.pdf
