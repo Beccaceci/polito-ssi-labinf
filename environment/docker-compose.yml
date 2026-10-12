@@ -1,22 +1,36 @@
+name: labinf
+
 services:
   # Target Server (Alice): hosts lab services (Apache, Exim4, custom daemons)
   alice:
     build:
       context: ./targets/lab01
       dockerfile: Dockerfile
-    container_name: labinf_alice
-    privileged: true
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    sysctls:
-      - net.ipv4.ip_forward=1
+    init: true
+    environment:
+      LABINF_ALICE_IP: ${LABINF_ALICE_IP:-10.0.2.10}
+      LABINF_BOB_IP: ${LABINF_BOB_IP:-10.0.2.20}
+      LABINF_CHUCK_IP: ${LABINF_CHUCK_IP:-10.0.2.30}
     volumes:
       - ../workspace:/workspace:rw
     networks:
       secnet:
-        ipv4_address: 10.0.2.10
+        ipv4_address: ${LABINF_ALICE_IP:-10.0.2.10}
     restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python3 -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1/login.html", timeout=2)' &&
+          python3 /usr/local/bin/not_ftp.py --healthcheck && nc -z 127.0.0.1 25 &&
+          nc -z 127.0.0.1 22 && nc -z 127.0.0.1 1337
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 20s
 
   # Client (Bob): legitimate Kali client node
   bob:
@@ -24,19 +38,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.kali
-    container_name: labinf_bob
-    privileged: true
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    sysctls:
-      - net.ipv4.ip_forward=1
+    init: true
+    environment:
+      LABINF_ALICE_IP: ${LABINF_ALICE_IP:-10.0.2.10}
+      LABINF_BOB_IP: ${LABINF_BOB_IP:-10.0.2.20}
+      LABINF_CHUCK_IP: ${LABINF_CHUCK_IP:-10.0.2.30}
     volumes:
       - ../workspace:/home/kali/workspace:rw
     networks:
       secnet:
-        ipv4_address: 10.0.2.20
+        ipv4_address: ${LABINF_BOB_IP:-10.0.2.20}
     restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "ip -brief address show eth0 | grep -Fq '${LABINF_BOB_IP:-10.0.2.20}/'"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
 
   # Attacker / Analyst (Chuck): Kali security suite node
   chuck:
@@ -44,27 +64,41 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.kali
-    container_name: labinf_chuck
+    # Keep this security lab's attacker namespace isolated and prevent ICMP redirects.
     privileged: true
     cap_add:
       - NET_ADMIN
       - NET_RAW
     sysctls:
       - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.send_redirects=0
+      - net.ipv4.conf.default.send_redirects=0
     ports:
-      - "6080:6080" # Web GUI / noVNC
+      - "127.0.0.1:${LABINF_GUI_HOST_PORT:-6080}:6080" # Web GUI / noVNC, host-local only
+    init: true
+    environment:
+      LABINF_ALICE_IP: ${LABINF_ALICE_IP:-10.0.2.10}
+      LABINF_BOB_IP: ${LABINF_BOB_IP:-10.0.2.20}
+      LABINF_CHUCK_IP: ${LABINF_CHUCK_IP:-10.0.2.30}
     volumes:
       - ../workspace:/home/kali/workspace:rw
     networks:
       secnet:
-        ipv4_address: 10.0.2.30
+        ipv4_address: ${LABINF_CHUCK_IP:-10.0.2.30}
     restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "ip -brief address show eth0 | grep -Fq '${LABINF_CHUCK_IP:-10.0.2.30}/'"]
+      interval: 5s
+      timeout: 3s
+      retries: 6
 
 networks:
   secnet:
     driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: "9000"
     ipam:
       driver: default
       config:
-        - subnet: 10.0.2.0/24
-          gateway: 10.0.2.1
+        - subnet: ${LABINF_SUBNET:-10.0.2.0/24}
+          gateway: ${LABINF_GATEWAY:-10.0.2.1}

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -u
+
+ETTERCAP_BIN=/usr/bin/ettercap
+
+if [[ ! -x "$ETTERCAP_BIN" ]]; then
+  echo "labinf-ettercap: $ETTERCAP_BIN is not installed" >&2
+  exit 127
+fi
+
+has_mitm=false
+unoffensive=false
+for arg in "$@"; do
+  case "$arg" in
+    -M|--mitm|--mitm=*) has_mitm=true ;;
+    -u|--unoffensive) unoffensive=true ;;
+  esac
+done
+
+if [[ "$has_mitm" != true || "$unoffensive" == true ]]; then
+  if [[ "$EUID" -eq 0 ]]; then
+    exec "$ETTERCAP_BIN" "$@"
+  fi
+  exec sudo -E "$ETTERCAP_BIN" "$@"
+fi
+
+if [[ "$EUID" -ne 0 ]]; then
+  exec sudo -E "$0" "$@"
+fi
+
+# Docker Desktop exposes coalesced TCP frames to Ettercap. The bridge's jumbo
+# MTU and disabled interface offloads let the user-space relay inject them.
+sysctl -q -w net.ipv4.ip_forward=1
+sysctl -q -w net.ipv4.conf.all.send_redirects=0
+sysctl -q -w net.ipv4.conf.default.send_redirects=0
+sysctl -q -w net.ipv4.conf.eth0.send_redirects=0
+if command -v ethtool >/dev/null 2>&1; then
+  ethtool -K eth0 gro off 2>/dev/null || true
+  ethtool -K eth0 gso off tso off 2>/dev/null || true
+fi
+"$ETTERCAP_BIN" "$@" &
+ettercap_pid=$!
+
+keep_forwarding() {
+  while kill -0 "$ettercap_pid" 2>/dev/null; do
+    if [[ "$(cat /proc/sys/net/ipv4/ip_forward)" != 1 ]]; then
+      sysctl -q -w net.ipv4.ip_forward=1 || return
+    fi
+    sleep 0.1
+  done
+}
+
+keep_forwarding &
+monitor_pid=$!
+
+stop_children() {
+  kill -INT "$ettercap_pid" 2>/dev/null || true
+  wait "$ettercap_pid" 2>/dev/null || true
+  kill "$monitor_pid" 2>/dev/null || true
+}
+trap stop_children INT TERM HUP
+
+wait "$ettercap_pid"
+status=$?
+kill "$monitor_pid" 2>/dev/null || true
+wait "$monitor_pid" 2>/dev/null || true
+exit "$status"

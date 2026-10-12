@@ -5,6 +5,10 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_DIR="$DIR/environment"
 COMPOSE_FILE="$INFRA_DIR/docker-compose.yml"
 
+compose() {
+  docker compose -f "$COMPOSE_FILE" "$@"
+}
+
 # ANSI Color codes
 BOLD="\033[1m"
 RESET="\033[0m"
@@ -28,12 +32,12 @@ check_docker() {
 cmd_start() {
   check_docker || return 1
   echo -e "${BLUE}[+] Avvio dell'ambiente multi-nodo LABINF (Alice, Bob, Chuck)...${RESET}"
-  docker compose -f "$COMPOSE_FILE" up -d
+  compose up -d --build --wait --wait-timeout 90
   echo ""
   echo -e "${GREEN}${BOLD}[+] Ambiente attivo con successo!${RESET}"
-  echo -e "    ${CYAN}• Alice${RESET} (Target Server):   ${BOLD}10.0.2.10${RESET} (Apache 80, Exim4 25, Mock 2121/1337)"
-  echo -e "    ${CYAN}• Bob${RESET}   (Client):          ${BOLD}10.0.2.20${RESET} (Kali Linux)"
-  echo -e "    ${CYAN}• Chuck${RESET} (Attaccante/MITM):  ${BOLD}10.0.2.30${RESET} (Kali Linux Suite)"
+  echo -e "    ${CYAN}• Alice${RESET} (Target Server):   ${BOLD}${LABINF_ALICE_IP:-10.0.2.10}${RESET} (SSH 22, Apache 80, Exim4 25, Mock FTP 21/2121, Challenge 1337)"
+  echo -e "    ${CYAN}• Bob${RESET}   (Client):          ${BOLD}${LABINF_BOB_IP:-10.0.2.20}${RESET} (Kali Linux)"
+  echo -e "    ${CYAN}• Chuck${RESET} (Attaccante/MITM):  ${BOLD}${LABINF_CHUCK_IP:-10.0.2.30}${RESET} (Kali Linux Suite)"
   echo -e "    ${CYAN}• Workspace Condiviso:${RESET}     ${BOLD}./workspace${RESET} (condiviso con tutti i container)"
   echo ""
   echo -e "Accesso rapido ai terminali:"
@@ -46,69 +50,114 @@ cmd_start() {
 cmd_stop() {
   check_docker || return 1
   echo -e "${YELLOW}[+] Arresto dei container LABINF...${RESET}"
-  docker compose -f "$COMPOSE_FILE" down
+  compose down
   echo -e "${GREEN}[+] Ambiente arrestato con successo.${RESET}"
 }
 
 cmd_restart() {
   check_docker || return 1
   echo -e "${YELLOW}[+] Riavvio dell'ambiente LABINF...${RESET}"
-  docker compose -f "$COMPOSE_FILE" restart
+  compose restart
   echo -e "${GREEN}[+] Ambiente riavviato.${RESET}"
 }
 
 cmd_status() {
   check_docker || return 1
   echo -e "${CYAN}${BOLD}=== Stato dei Container LABINF ===${RESET}"
-  docker compose -f "$COMPOSE_FILE" ps
+  compose ps
 }
 
 cmd_build() {
   check_docker || return 1
   echo -e "${BLUE}[+] Compilazione locale delle immagini dei nodi...${RESET}"
-  docker compose -f "$COMPOSE_FILE" build
+  compose build
   echo -e "${GREEN}[+] Build completata con successo.${RESET}"
 }
 
 cmd_pull() {
   check_docker || return 1
   echo -e "${BLUE}[+] Download immagini precompilate da GitHub Container Registry...${RESET}"
-  docker compose -f "$COMPOSE_FILE" pull || {
+  compose pull || {
     echo -e "${YELLOW}[!] Immagine remota non ancora disponibile. Procedo con compilazione locale...${RESET}"
-    docker compose -f "$COMPOSE_FILE" build
+    compose build
   }
   echo -e "${GREEN}[+] Immagini pronte!${RESET}"
 }
 
 cmd_verify() {
   check_docker || return 1
-  echo -e "${CYAN}${BOLD}[+] Verifica strumenti e connettività su Chuck (10.0.2.30)...${RESET}"
-  docker exec labinf_chuck bash -c '
-    echo -n "  • Nmap:       "; nmap --version 2>/dev/null | head -n 1 || echo "NON TROVATO"
-    echo -n "  • Ettercap:   "; ettercap --version 2>/dev/null | head -n 1 || echo "NON TROVATO"
-    echo -n "  • iptables:   "; iptables --version 2>/dev/null || echo "NON TROVATO"
-    echo -n "  • nftables:   "; nft --version 2>/dev/null || echo "NON TROVATO"
-    echo -n "  • StrongSwan: "; swanctl --version 2>/dev/null || echo "NON TROVATO"
-    echo -n "  • OpenSSL:    "; openssl version 2>/dev/null || echo "NON TROVATO"
-    echo -n "  • Hashdeep:   "; hashdeep -v 2>/dev/null | head -n 1 || echo "NON TROVATO"
-  '
-  echo ""
-  echo -e "${CYAN}${BOLD}[+] Verifica connettività verso Alice e Bob...${RESET}"
-  docker exec labinf_chuck bash -c '
-    ping -c 1 -W 1 10.0.2.10 >/dev/null 2>&1 && echo "  • Ping Alice (10.0.2.10): OK" || echo "  • Ping Alice: FALLITO"
-    ping -c 1 -W 1 10.0.2.20 >/dev/null 2>&1 && echo "  • Ping Bob   (10.0.2.20): OK" || echo "  • Ping Bob: FALLITO"
-  '
-  echo ""
-  echo -e "${GREEN}${BOLD}[+] Verifica completata!${RESET}"
+  local failed=0 service container_id health
+  echo -e "${CYAN}${BOLD}[+] Verifica stato dei nodi e salute dei servizi...${RESET}"
+  for service in alice bob chuck; do
+    container_id="$(compose ps -q "$service")"
+    if [[ -z "$container_id" ]]; then
+      echo -e "  ${RED}• $service: container non avviato${RESET}"
+      failed=1
+      continue
+    fi
+    health="$(docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$container_id")"
+    if [[ "$health" != "running|healthy" ]]; then
+      echo -e "  ${RED}• $service: $health${RESET}"
+      failed=1
+    else
+      echo -e "  ${GREEN}• $service: $health${RESET}"
+    fi
+  done
+
+  if ! compose exec -T chuck bash -lc '
+    failed=0
+    for tool in nmap ettercap labinf-ettercap tshark tcpdump iptables nft swanctl openssl hashdeep ip ping nc curl s-nail ftp host sshpass; do
+      if command -v "$tool" >/dev/null 2>&1; then
+        printf "  • %-10s OK\n" "$tool"
+      else
+        printf "  • %-10s NON TROVATO\n" "$tool"
+        failed=1
+      fi
+    done
+    exit "$failed"
+  '; then
+    echo -e "  ${RED}• Tool richiesti mancanti su Chuck${RESET}"
+    failed=1
+  fi
+
+  if ! compose exec -T chuck bash -lc '
+    set -e
+    for address in "${LABINF_ALICE_IP:-10.0.2.10}" "${LABINF_BOB_IP:-10.0.2.20}"; do
+      ping -c 1 -W 2 "$address" >/dev/null
+      echo "  • Ping $address: OK"
+    done
+    for port in 22 25 80 1337; do
+      nc -z -w 2 "${LABINF_ALICE_IP:-10.0.2.10}" "$port"
+      echo "  • Alice TCP/$port: OK"
+    done
+    curl --fail --silent --show-error "http://${LABINF_ALICE_IP:-10.0.2.10}/login.html" >/dev/null
+    echo "  • Alice HTTP: OK"
+  '; then
+    echo -e "  ${RED}• Rete o servizi Alice non verificati${RESET}"
+    failed=1
+  fi
+
+  if compose exec -T alice python3 /usr/local/bin/not_ftp.py --healthcheck; then
+    echo "  • Alice mock FTP prompts (21/2121): OK"
+  else
+    echo -e "  ${RED}• Alice mock FTP prompts (21/2121): FALLITO${RESET}"
+    failed=1
+  fi
+
+  if (( failed )); then
+    echo -e "${RED}${BOLD}[!] Verifica fallita. Correggi gli errori prima di eseguire gli esercizi.${RESET}"
+    return 1
+  fi
+  echo -e "${GREEN}${BOLD}[+] Verifica completata: nodi, strumenti, rete e servizi sono disponibili.${RESET}"
 }
 
 cmd_shell() {
   check_docker || return 1
   target="$1"
   case "$target" in
-    chuck) docker exec -it labinf_chuck bash ;;
-    bob)   docker exec -it labinf_bob bash ;;
-    alice) docker exec -it labinf_alice bash ;;
+    chuck) compose exec chuck bash ;;
+    bob)   compose exec bob bash ;;
+    alice) compose exec alice bash ;;
     *) echo -e "${RED}[!] Nodo sconosciuto: $target${RESET}"; return 1 ;;
   esac
 }
@@ -116,13 +165,13 @@ cmd_shell() {
 cmd_read_email() {
   check_docker || return 1
   echo -e "${CYAN}${BOLD}[+] Contenuto della casella email di Alice (/var/mail/alice):${RESET}"
-  docker exec -it labinf_alice cat /var/mail/alice
+  compose exec -T alice cat /var/mail/alice
 }
 
 cmd_gui() {
   check_docker || return 1
   echo -e "${BLUE}[+] Avvio Web GUI Desktop (noVNC + Wireshark) su Chuck...${RESET}"
-  docker exec -d labinf_chuck /usr/local/bin/labinf-gui start
+  compose exec -d chuck /usr/local/bin/labinf-gui start
   sleep 2
   echo -e "${GREEN}${BOLD}[+] Web GUI attiva!${RESET}"
   echo -e "    Apri nel tuo browser: ${BOLD}http://localhost:6080/vnc.html${RESET}"
@@ -136,7 +185,7 @@ cmd_gui() {
 cmd_gui_stop() {
   check_docker || return 1
   echo -e "${YELLOW}[+] Arresto Web GUI Desktop su Chuck...${RESET}"
-  docker exec -it labinf_chuck /usr/local/bin/labinf-gui stop
+  compose exec chuck /usr/local/bin/labinf-gui stop
 }
 
 # Interactive TUI Menu

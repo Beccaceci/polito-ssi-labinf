@@ -14,3 +14,8 @@
 .tmp_build/
 *.log
 docker-compose.override.yml
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class

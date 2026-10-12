@@ -37,15 +37,18 @@ function Test-Docker {
 function Invoke-Start {
     if (-not (Test-Docker)) { return }
     Write-Host "`n[+] Avvio dell'ambiente multi-nodo LABINF (Alice, Bob, Chuck)..." -ForegroundColor Cyan
-    docker compose -f $ComposeFile up -d
+    docker compose -f $ComposeFile up -d --build --wait --wait-timeout 90
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[!] Errore durante l'avvio dei container." -ForegroundColor Red
         return
     }
     Write-Host "`n[+] Ambiente attivo con successo!" -ForegroundColor Green
-    Write-Host "    • Alice (Target Server):     10.0.2.10 (Apache 80, Exim4 25, Mock 2121/1337)" -ForegroundColor Cyan
-    Write-Host "    • Bob   (Client):            10.0.2.20 (Kali Linux)" -ForegroundColor Cyan
-    Write-Host "    • Chuck (Attaccante/MITM):    10.0.2.30 (Kali Linux Suite)" -ForegroundColor Cyan
+    $aliceIp = if ($env:LABINF_ALICE_IP) { $env:LABINF_ALICE_IP } else { "10.0.2.10" }
+    $bobIp = if ($env:LABINF_BOB_IP) { $env:LABINF_BOB_IP } else { "10.0.2.20" }
+    $chuckIp = if ($env:LABINF_CHUCK_IP) { $env:LABINF_CHUCK_IP } else { "10.0.2.30" }
+    Write-Host "    • Alice (Target Server):     $aliceIp (SSH 22, Apache 80, Exim4 25, Mock FTP 21/2121, Challenge 1337)" -ForegroundColor Cyan
+    Write-Host "    • Bob   (Client):            $bobIp (Kali Linux)" -ForegroundColor Cyan
+    Write-Host "    • Chuck (Attaccante/MITM):    $chuckIp (Kali Linux Suite)" -ForegroundColor Cyan
     Write-Host "    • Workspace Condiviso:       .\workspace (cartella condivisa con tutti i nodi)`n" -ForegroundColor Cyan
     Write-Host "Accesso rapido ai terminali:"
     Write-Host "    .\labinf.ps1 chuck      -> Shell per Chuck" -ForegroundColor White
@@ -95,31 +98,54 @@ function Invoke-Pull {
 
 function Invoke-Verify {
     if (-not (Test-Docker)) { return }
-    Write-Host "`n[+] Verifica strumenti e connettività su Chuck (10.0.2.30)..." -ForegroundColor Cyan
-    docker exec labinf_chuck bash -c '
-        echo -n "  • Nmap:       "; nmap --version 2>/dev/null | head -n 1 || echo "NON TROVATO"
-        echo -n "  • Ettercap:   "; ettercap --version 2>/dev/null | head -n 1 || echo "NON TROVATO"
-        echo -n "  • iptables:   "; iptables --version 2>/dev/null || echo "NON TROVATO"
-        echo -n "  • nftables:   "; nft --version 2>/dev/null || echo "NON TROVATO"
-        echo -n "  • StrongSwan: "; swanctl --version 2>/dev/null || echo "NON TROVATO"
-        echo -n "  • OpenSSL:    "; openssl version 2>/dev/null || echo "NON TROVATO"
-        echo -n "  • Hashdeep:   "; hashdeep -v 2>/dev/null | head -n 1 || echo "NON TROVATO"
-        echo -n "  • Wireshark:  "; wireshark --version 2>/dev/null | head -n 1 || echo "NON TROVATO"
-    '
-    Write-Host "`n[+] Verifica connettività verso Alice e Bob..." -ForegroundColor Cyan
-    docker exec labinf_chuck bash -c '
-        ping -c 1 -W 1 10.0.2.10 >/dev/null 2>&1 && echo "  • Ping Alice (10.0.2.10): OK" || echo "  • Ping Alice: FALLITO"
-        ping -c 1 -W 1 10.0.2.20 >/dev/null 2>&1 && echo "  • Ping Bob   (10.0.2.20): OK" || echo "  • Ping Bob: FALLITO"
-    '
-    Write-Host "`n[+] Verifica completata!`n" -ForegroundColor Green
+    $failed = $false
+    Write-Host "`n[+] Verifica stato dei nodi e salute dei servizi..." -ForegroundColor Cyan
+    foreach ($service in @("alice", "bob", "chuck")) {
+        $containerId = docker compose -f $ComposeFile ps -q $service
+        if ($LASTEXITCODE -ne 0 -or -not $containerId) {
+            Write-Host "  • $service : container non avviato" -ForegroundColor Red
+            $failed = $true
+            continue
+        }
+        $health = docker inspect --format '{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}' $containerId
+        if ($LASTEXITCODE -ne 0 -or $health -ne "running|healthy") {
+            Write-Host "  • $service : $health" -ForegroundColor Red
+            $failed = $true
+        } else {
+            Write-Host "  • $service : $health" -ForegroundColor Green
+        }
+    }
+
+    $toolCheck = 'failed=0; for tool in nmap ettercap labinf-ettercap tshark tcpdump iptables nft swanctl openssl hashdeep ip ping nc curl s-nail ftp host sshpass; do if command -v "$tool" >/dev/null 2>&1; then echo "  • $tool : OK"; else echo "  • $tool : NON TROVATO"; failed=1; fi; done; exit "$failed"'
+    docker compose -f $ComposeFile exec -T chuck bash -lc $toolCheck
+    if ($LASTEXITCODE -ne 0) { $failed = $true }
+
+    $networkCheck = 'set -e; for address in "${LABINF_ALICE_IP:-10.0.2.10}" "${LABINF_BOB_IP:-10.0.2.20}"; do ping -c 1 -W 2 "$address" >/dev/null; echo "  • Ping $address : OK"; done; for port in 22 25 80 1337; do nc -z -w 2 "${LABINF_ALICE_IP:-10.0.2.10}" "$port"; echo "  • Alice TCP/$port : OK"; done; curl --fail --silent --show-error "http://${LABINF_ALICE_IP:-10.0.2.10}/login.html" >/dev/null; echo "  • Alice HTTP : OK"'
+    docker compose -f $ComposeFile exec -T chuck bash -lc $networkCheck
+    if ($LASTEXITCODE -ne 0) { $failed = $true }
+
+    docker compose -f $ComposeFile exec -T alice python3 /usr/local/bin/not_ftp.py --healthcheck
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  • Alice mock FTP prompts (21/2121): FALLITO" -ForegroundColor Red
+        $failed = $true
+    } else {
+        Write-Host "  • Alice mock FTP prompts (21/2121): OK" -ForegroundColor Green
+    }
+
+    if ($failed) {
+        Write-Host "`n[!] Verifica fallita. Correggi gli errori prima di eseguire gli esercizi.`n" -ForegroundColor Red
+        return $false
+    }
+    Write-Host "`n[+] Verifica completata: nodi, strumenti, rete e servizi sono disponibili.`n" -ForegroundColor Green
+    return $true
 }
 
 function Invoke-Shell([string]$Target) {
     if (-not (Test-Docker)) { return }
     switch ($Target) {
-        "chuck" { docker exec -it labinf_chuck bash }
-        "bob"   { docker exec -it labinf_bob bash }
-        "alice" { docker exec -it labinf_alice bash }
+        "chuck" { docker compose -f $ComposeFile exec chuck bash }
+        "bob"   { docker compose -f $ComposeFile exec bob bash }
+        "alice" { docker compose -f $ComposeFile exec alice bash }
         Default { Write-Host "[!] Nodo sconosciuto: $Target" -ForegroundColor Red }
     }
 }
@@ -127,13 +153,13 @@ function Invoke-Shell([string]$Target) {
 function Invoke-ReadEmail {
     if (-not (Test-Docker)) { return }
     Write-Host "`n[+] Contenuto della casella email di Alice (/var/mail/alice):" -ForegroundColor Cyan
-    docker exec -it labinf_alice cat /var/mail/alice
+    docker compose -f $ComposeFile exec -T alice cat /var/mail/alice
 }
 
 function Invoke-Gui {
     if (-not (Test-Docker)) { return }
     Write-Host "`n[+] Avvio Web GUI Desktop (noVNC + Wireshark) su Chuck..." -ForegroundColor Cyan
-    docker exec -d labinf_chuck /usr/local/bin/labinf-gui start
+    docker compose -f $ComposeFile exec -d chuck /usr/local/bin/labinf-gui start
     Start-Sleep -Seconds 2
     Write-Host "[+] Web GUI attiva!" -ForegroundColor Green
     Write-Host "    Apri nel tuo browser: http://localhost:6080/vnc.html`n" -ForegroundColor White
@@ -143,7 +169,7 @@ function Invoke-Gui {
 function Invoke-GuiStop {
     if (-not (Test-Docker)) { return }
     Write-Host "`n[+] Arresto Web GUI Desktop su Chuck..." -ForegroundColor Yellow
-    docker exec -it labinf_chuck /usr/local/bin/labinf-gui stop
+    docker compose -f $ComposeFile exec chuck /usr/local/bin/labinf-gui stop
     Write-Host "[+] Web GUI arrestata.`n" -ForegroundColor Green
 }
 
@@ -175,7 +201,7 @@ function Show-Menu {
             "2"  { Invoke-Shell "chuck" }
             "3"  { Invoke-Shell "bob" }
             "4"  { Invoke-Shell "alice" }
-            "5"  { Invoke-Verify }
+            "5"  { $null = Invoke-Verify }
             "6"  { Invoke-Status }
             "7"  { Invoke-Build }
             "8"  { Invoke-Stop }
@@ -197,7 +223,7 @@ switch ($Command) {
     "status"     { Invoke-Status }
     "build"      { Invoke-Build }
     "pull"       { Invoke-Pull }
-    "verify"     { Invoke-Verify }
+    "verify"     { if (-not (Invoke-Verify)) { exit 1 } }
     "gui"        { Invoke-Gui }
     "gui-stop"   { Invoke-GuiStop }
     "check"      { if (Test-Docker) { Write-Host "[+] Docker daemon attivo e raggiungibile.`n" -ForegroundColor Green } }

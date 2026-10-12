@@ -1,4 +1,6 @@
-FROM kalilinux/kali-rolling:latest
+# Pin the multi-architecture manifest so a rebuild starts from the same Kali
+# base. Refresh this digest intentionally when updating the lab toolchain.
+FROM kalilinux/kali-rolling:latest@sha256:02f5d6c019e549b0f55da58e835cad5355ef1030c6b2645265a324e37dfc4acc
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dnsutils \
     netcat-openbsd \
     ftp \
+    sshpass \
     procps \
     nano \
     sudo \
@@ -51,9 +54,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wireshark \
     && rm -rf /var/lib/apt/lists/*
 
+# Keep this addition separate so the larger toolchain layer remains reusable.
+RUN apt-get update && apt-get install -y --no-install-recommends ethtool \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -s /bin/bash -G sudo,wireshark kali && \
     echo "kali:kali" | chpasswd && \
     echo "kali ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-client && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY scripts/labinf-ettercap /usr/local/bin/labinf-ettercap
+COPY scripts/labinf-node-init.sh /usr/local/bin/labinf-node-init.sh
+RUN chmod 0755 /usr/local/bin/labinf-ettercap /usr/local/bin/labinf-node-init.sh
 
 # Web GUI Helper Launcher
 RUN printf '#!/bin/bash\n\
@@ -89,4 +103,5 @@ esac\n' > /usr/local/bin/labinf-gui && chmod +x /usr/local/bin/labinf-gui
 
 WORKDIR /home/kali
 USER kali
+ENTRYPOINT ["/usr/local/bin/labinf-node-init.sh"]
 CMD ["sleep", "infinity"]

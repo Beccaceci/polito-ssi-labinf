@@ -1,0 +1,35 @@
+name: Validate LABINF environment
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  lab01-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Validate Compose configuration
+        run: docker compose -f environment/docker-compose.yml config -q
+
+      - name: Validate source syntax
+        run: |
+          bash -n labinf.sh environment/targets/lab01/scripts/start.sh
+          python - <<'PY'
+          from pathlib import Path
+          for path in [Path("tests/test_lab01_environment.py"), *Path("environment/targets/lab01/scripts").glob("*.py")]:
+              compile(path.read_text(), str(path), "exec")
+          PY
+
+      - name: Run Lab 01 build and acceptance tests
+        run: python -m unittest discover -s tests -v

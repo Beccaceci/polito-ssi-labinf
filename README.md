@@ -59,9 +59,9 @@ Rather than launching 3 resource-heavy VirtualBox VMs (consuming 8–12 GB of RA
 | Official Lab Node | Kurose Character | Simulation Container | IP Address | Subnet / Role |
 | :--- | :---: | :--- | :--- | :--- |
 | **vSwitch & NAT** | 🌐 *vSwitch* | Docker Bridge `secnet` | `10.0.2.1` | Isolated Layer 2 broadcast domain (`10.0.2.0/24`) |
-| **Node A (Kali 1)** | <img src="assets/kurose_alice.png" width="36" alt="Alice" /> | `labinf_alice` | `10.0.2.10` | **Target Server** (Apache HTTP 80, Exim4 SMTP 25, Mock FTP 2121, Challenge 1337) |
-| **Node B (Kali 2)** | <img src="assets/kurose_bob.png" width="36" alt="Bob" /> | `labinf_bob` | `10.0.2.20` | **Legitimate Client** (traffic generator, browser & mail user agent) |
-| **Node C (Kali 3)** | <img src="assets/kurose_chuck.png" width="36" alt="Chuck" /> | `labinf_chuck` | `10.0.2.30` | **Attacker / Active MITM** (Ettercap ARP Poisoning, Nmap, Wireshark, iptables) |
+| **Node A (Kali 1)** | <img src="assets/kurose_alice.png" width="36" alt="Alice" /> | Compose service `alice` | `10.0.2.10` | **Target Server** (SSH 22, Apache HTTP 80, Exim4 SMTP 25, mock FTP prompt 21/2121, challenge 1337) |
+| **Node B (Kali 2)** | <img src="assets/kurose_bob.png" width="36" alt="Bob" /> | Compose service `bob` | `10.0.2.20` | **Legitimate Client** (traffic generator, browser & mail user agent) |
+| **Node C (Kali 3)** | <img src="assets/kurose_chuck.png" width="36" alt="Chuck" /> | Compose service `chuck` | `10.0.2.30` | **Attacker / Active MITM** (Ettercap ARP Poisoning, Nmap, Wireshark, iptables) |
 
 The simulation architecture is identical and invariant across all host operating systems. The nodes run inside isolated Docker containers connected by the isolated virtual bridge subnet `10.0.2.0/24`:
 
@@ -74,13 +74,13 @@ The simulation architecture is identical and invariant across all host operating
             +-----------------------+-----------------------+
             |                       |                       |
 +-----------v-----------+   +-------v-------+   +-----------v-----------+
-|     labinf_alice      |   |  labinf_bob   |   |     labinf_chuck      |
+|      alice            |   |      bob      |   |       chuck           |
 |       10.0.2.10       |   |   10.0.2.20   |   |       10.0.2.30       |
 |                       |   |               |   |                       |
 |   Target Server:      |   |   Client:     |   |   Attacker / MITM:    |
 |   • Apache HTTPD (80) |   |   • Kali Base |   |   • Kali Security     |
 |   • Exim4 SMTP (25)   |   |   • User Bob  |   |   • Nmap / Ettercap   |
-|   • Mock FTP (2121)   |   |               |   |   • iptables / IPsec  |
+|   • Mock FTP (21/2121)|   |               |   |   • iptables / IPsec  |
 |   • Challenge (1337)  |   |               |   |   • Wireshark Suite   |
 +-----------+-----------+   +-------+-------+   +-----------+-----------+
             |                       |                       |
@@ -95,17 +95,23 @@ The simulation architecture is identical and invariant across all host operating
 
 ### Key Architectural Capabilities
 1. **Network Namespace Isolation (`secnet` 10.0.2.0/24)**:
-   - <img src="assets/kurose_alice.png" width="22" valign="middle" alt="Alice" /> **Alice (`labinf_alice` — 10.0.2.10)**: Target server hosting Apache HTTP, Exim4 Mail Transfer Agent, and test daemons. Represents the destination or "secure receiver".
-   - <img src="assets/kurose_bob.png" width="22" valign="middle" alt="Bob" /> **Bob (`labinf_bob` — 10.0.2.20)**: Legitimate client machine used to generate traffic, log in to services, and send emails across the network.
-   - <img src="assets/kurose_chuck.png" width="22" valign="middle" alt="Chuck" /> **Chuck (`labinf_chuck` — 10.0.2.30)**: Security analyst and attacker workstation (the "Trudy" intruder in Kurose's model) equipped with the full penetration testing and network security suite.
-2. **True Kernel Privileges**:
-   All nodes are provisioned with `NET_ADMIN`, `NET_RAW`, and `net.ipv4.ip_forward=1`. This allows authentic Layer 2 ARP cache spoofing, packet injection, bidirectional IP forwarding, and kernel-level firewall filtering (`iptables` / `nftables`).
+   - <img src="assets/kurose_alice.png" width="22" valign="middle" alt="Alice" /> **Alice (`alice` — 10.0.2.10)**: Target server hosting Apache HTTP, Exim4 Mail Transfer Agent, and Lab 01 test daemons. Represents the destination or "secure receiver".
+   - <img src="assets/kurose_bob.png" width="22" valign="middle" alt="Bob" /> **Bob (`bob` — 10.0.2.20)**: Legitimate client machine used to generate traffic, log in to services, and send emails across the network.
+   - <img src="assets/kurose_chuck.png" width="22" valign="middle" alt="Chuck" /> **Chuck (`chuck` — 10.0.2.30)**: Security analyst and attacker workstation (the "Trudy" intruder in Kurose's model) equipped with the Kali security suite.
+2. **Network Capabilities**:
+   Alice and Bob receive `NET_ADMIN` and `NET_RAW`; Chuck runs privileged with these capabilities and `net.ipv4.ip_forward=1` for the network exercises. Alice provides an SSH account (`alice`/`alice`) for the Lab 01 cleartext authentication exercise. Use `labinf-ettercap` from Chuck for MITM commands: Ettercap disables kernel forwarding on startup, and this launcher keeps it enabled so intercepted traffic can continue through Chuck.
 3. **Shared Host Volume (`./workspace`)**:
    The local folder `./workspace` is mounted directly into `/home/kali/workspace` on Bob and Chuck, and into `/workspace` on Alice.
    - Capture packets on Chuck: `tcpdump -i eth0 -w /home/kali/workspace/capture.pcap`
    - The file is immediately available on your host computer to inspect using your native host Wireshark.
 4. **On-Demand Web GUI Desktop (Port 6080)**:
    For tools requiring a graphical interface (Wireshark GUI, Ettercap GTK), Chuck embeds an on-demand lightweight desktop accessible via any modern web browser at `http://localhost:6080/vnc.html` without needing to install or configure X11/XQuartz/VcXsrv servers on the host.
+
+For the Lab 01 ARP MITM exercise, replace the executable in the handout's command with the compatibility launcher while keeping the same options and targets. For example:
+
+```bash
+labinf-ettercap -T -M arp /10.0.2.10// /10.0.2.20//
+```
 
 ---
 
@@ -276,7 +282,7 @@ Running `./labinf.sh` (macOS/Linux) or `.\labinf.ps1` (Windows) without argument
 | `./labinf.sh stop` | `.\labinf.ps1 stop` | `labinf stop` | Stops and removes containers (preserves images) |
 | `./labinf.sh restart` | `.\labinf.ps1 restart` | `labinf restart` | Restarts all containers |
 | `./labinf.sh status` | `.\labinf.ps1 status` | `labinf status` | Displays container status and IP addresses |
-| `./labinf.sh verify` | `.\labinf.ps1 verify` | `labinf verify` | Verifies presence of security tools & connectivity |
+| `./labinf.sh verify` | `.\labinf.ps1 verify` | `labinf verify` | Verifies node health, required tools, network links, and Alice's services; exits with failure when a check fails |
 | `./labinf.sh chuck` | `.\labinf.ps1 chuck` | `labinf chuck` | Spawns interactive bash shell inside Chuck |
 | `./labinf.sh bob` | `.\labinf.ps1 bob` | `labinf bob` | Spawns interactive bash shell inside Bob |
 | `./labinf.sh alice` | `.\labinf.ps1 alice` | `labinf alice` | Spawns interactive bash shell inside Alice |
@@ -292,11 +298,11 @@ Running `./labinf.sh` (macOS/Linux) or `.\labinf.ps1` (Windows) without argument
 
 | Laboratory | Core Topics | Environment Support & Fidelity |
 | :--- | :--- | :--- |
-| **Lab 01: Network Attacks** | Nmap scans, OS fingerprinting, ARP Poisoning (`ettercap`), HTTP sniffing, SMTP credential harvesting. | ✅ **Full Fidelity**: Target services running on Alice; Layer 2 MITM and packet sniffing fully functional on Chuck. |
-| **Lab 02: Core Cryptography** | Symmetric ciphers (AES, DES, RC4), RSA (PKCS#1, CRT), Elliptic Curves (ECDSA), Hashing (MD5, SHA, IHA), Brute Force dictionary attacks. | ✅ **Full Fidelity**: OpenSSL suite, Python 3 crypto libraries, `hashdeep`, and wordlists. |
-| **Lab 03: Applied Cryptography** | MAC/HMAC, PBKDF2 key derivation, PKI infrastructure, Certificate Authority (CA) generation, CSR, X.509 certificates, CRL revocation. | ✅ **Full Fidelity**: OpenSSL CA scripting and certificate management tools pre-installed. |
-| **Lab 04: Firewalling** | Personal firewall, stateless & stateful filtering, `conntrack`, NAT, DMZ routing, forwarding between subnets. | ✅ **Full Fidelity**: Kernel capabilities `NET_ADMIN` and `net.ipv4.ip_forward=1` allow authentic `iptables` and `nftables` tables. |
-| **Lab 05: IPsec & TLS** | StrongSwan (`swanctl`), IKEv2 negotiation, IPsec tunnel & transport modes, TLS handshake inspection. | ✅ **Full Fidelity**: StrongSwan daemon and crypto plugins pre-configured. |
+| **Lab 01: Network Attacks** | Nmap scans, ARP poisoning, HTTP/SMTP sniffing, challenge discovery. | **Supported baseline**: three nodes, SSH, Apache, Exim, mock FTP prompt, challenge service, and ARP MITM forwarding through `labinf-ettercap`. Automated tests cover the service paths, SMTP delivery, and poisoned HTTP relay. DNS spoofing and remote-browser plugin behavior are not yet covered. |
+| **Lab 02: Core Cryptography** | OpenSSL ciphers, RSA/ECC, hashes, brute-force inputs, performance. | **Tooling only**: crypto tools are installed on Kali; course support archives and exercise inputs are not bundled or verified. |
+| **Lab 03: Applied Cryptography** | MAC/HMAC, AEAD, PKI, certificates, CRL. | **Tooling only**: OpenSSL is installed; the course AEAD script and exercise acceptance tests are not included. |
+| **Lab 04: Firewalling** | Personal firewall, stateless/stateful filtering, NAT, DMZ routing, forwarding. | **Partial**: container firewall tools and capabilities are available; the routed Alice–Frank–Bob topology is not implemented. |
+| **Lab 05: IPsec & TLS** | StrongSwan, IPsec policies and associations, TLS handshakes and performance. | **Tooling only**: relevant command-line packages are installed; supplied StrongSwan material and end-to-end tests are not included. |
 
 ---
 
@@ -322,10 +328,10 @@ Alternatively, execute commands via the Command Prompt (`cmd.exe`) using `labinf
 <details>
 <summary><b>3. Port 6080 already in use</b></summary>
 
-If another application is using port 6080 on your host machine, you can change the port binding in `environment/docker-compose.yml` under `chuck`:
+The web desktop binds to `127.0.0.1` only. If host port 6080 is in use, set `LABINF_GUI_HOST_PORT` before starting (for example, `LABINF_GUI_HOST_PORT=6081 ./labinf.sh start` on macOS/Linux, or `$env:LABINF_GUI_HOST_PORT=6081` in PowerShell):
 ```yaml
 ports:
-  - "6081:6080"
+  - "127.0.0.1:6081:6080"
 ```
 Then access `http://localhost:6081/vnc.html`.
 </details>
