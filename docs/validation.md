@@ -33,4 +33,10 @@ Official mode was checked for Lab 02 brute force (`workspace/runs/20261021T07520
 
 Benchmark commands executed each requested algorithm and size. Their durations are observations recorded in the run logs, not classroom-hardware performance claims. The handout's very slow `nmap -T0` timing exercise is documented as a full manual command; automated acceptance exercises the same scan mode against one port with a short explicit delay.
 
-Existing solution PDFs and published `LABS/labXX/log.txt` files were not modified. New evidence is confined to `workspace/runs/`.
+## Published solution and log updates
+
+On 2026-10-21, each published `LABS/labXX/log.txt` received a post-update acceptance addendum with the current source fingerprint, the lab's case IDs, and the Docker Desktop and Lima results. The original timestamped execution records were preserved as historical evidence.
+
+Each matching solution PDF received a final verification appendix with the same scope and material limitations. The Lab 02 PDF's 29 literal missing-output placeholders were replaced with explicit references to the corresponding revalidated cases and appendix.
+
+These published PDFs and logs are stored in sibling lab directories outside this Git checkout. The detailed, command-by-command evidence remains under the local `workspace/runs/` directory and is not part of the source commit.
