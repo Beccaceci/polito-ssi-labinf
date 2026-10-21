@@ -1,0 +1,7 @@
+{
+  "CA.pl.in": {
+    "url": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.0/apps/CA.pl.in",
+    "sha256": "6e62a0e424903e787c78e6e09ff9998a070fe3b2ff33f5f06b0674acf66bf475",
+    "transform": "replace template shebang with /usr/bin/perl; retain upstream code/license"
+  }
+}

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( EUID != 0 )); then exec sudo -n "$0" "$@"; fi
+[[ $# == 2 ]] || { echo 'Usage: labinf-service start|stop|restart|status ssh|apache2|ipsec|dns' >&2; exit 2; }
+action=$1
+case $2 in ssh|sshd) service=ssh;; apache2|apache) service=apache;; ipsec|strongswan) service=ipsec;; dns|dnsmasq) service=dns;; *) echo "Unknown service: $2" >&2; exit 2;; esac
+case $action in start|stop|restart|status) exec supervisorctl -c /etc/supervisor/labinf.conf "$action" "$service";; *) exit 2;; esac

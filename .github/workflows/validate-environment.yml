@@ -1,35 +1,37 @@
 name: Validate LABINF environment
-
 on:
   pull_request:
   push:
     branches: [main, master]
   workflow_dispatch:
-
 jobs:
-  lab01-integration:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+  acceptance:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
-
-      - name: Validate Compose configuration
-        run: docker compose -f environment/docker-compose.yml config -q
-
-      - name: Validate source syntax
+          python-version: '3.12'
+      - name: Unit checks and source validation
         run: |
-          bash -n labinf.sh environment/targets/lab01/scripts/start.sh
-          python - <<'PY'
-          from pathlib import Path
-          for path in [Path("tests/test_lab01_environment.py"), *Path("environment/targets/lab01/scripts").glob("*.py")]:
-              compile(path.read_text(), str(path), "exec")
-          PY
-
-      - name: Run Lab 01 build and acceptance tests
-        run: python -m unittest discover -s tests -v
+          python -m unittest discover -s tests/unit -v
+          bash -n labinf.sh environment/scripts/labinf-ettercap environment/scripts/labinf-node-init.sh environment/scripts/labinf-apache environment/scripts/labinf-service environment/scripts/labinf-exercise-init environment/scripts/labinf-gui environment/scripts/labinf-browser environment/targets/lab01/scripts/start.sh
+          python -m compileall -q labinf labinf_cli.py environment/materials/practice
+          docker compose -f environment/docker-compose.yml config -q
+      - name: Build native exercise image
+        run: docker build -t labinf-exercise:local -f environment/Dockerfile.kali environment
+      - name: Existing Lab 01 regression suite
+        run: python -m unittest discover -s tests -p test_lab01_environment.py -v
+      - name: All core and optional exercise scenarios
+        run: ./labinf.sh verify --all --build
+      - name: Keep evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.runner }}
+          path: workspace/runs/

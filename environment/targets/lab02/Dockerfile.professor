@@ -1,0 +1,8 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY materials/app.py /app/
+COPY materials/templates /app/templates
+COPY materials/static /app/static
+RUN pip install pycryptodome flask
+EXPOSE 5000
+CMD ["python", "app.py"]

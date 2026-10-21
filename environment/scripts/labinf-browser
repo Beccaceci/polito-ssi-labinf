@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( EUID == 0 )); then exec runuser -u kali -- "$0" "$@"; fi
+export DISPLAY=:1
+export XAUTHORITY="$HOME/.Xauthority"
+export HOME=/home/kali
+printf '%s\n' "$*" >> /tmp/labinf-browser-requests
+exec firefox-esr --no-remote --profile /home/kali/.labinf-firefox "$@"

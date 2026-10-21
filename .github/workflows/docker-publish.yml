@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main", "master" ]
     paths:
-      - 'environment/Dockerfile.kali'
+      - 'environment/**'
       - '.github/workflows/docker-publish.yml'
   workflow_dispatch:
 
@@ -61,3 +61,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and publish supplementary Lab 02 app
+        uses: docker/build-push-action@v5
+        with:
+          context: ./environment/targets/lab02
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ env.IMAGE_LC }}-lab02:sha-${{ github.sha }}

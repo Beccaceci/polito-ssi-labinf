@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🔮 The Magic Orb™ - OrbHash™ 🔮</title>
+    <link rel="icon" href="/static/img/crystal-ball.png" type="image/x-icon"/>
+    <style>
+        body {
+            background: #181c2f;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            margin-top: 2rem;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        .orb-ref {
+            text-align: center;
+            color: #b6baff;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            margin-top: 0.5rem;
+        }
+        .main-flex {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5rem;
+        }
+        .hash-form {
+            background: #23284a;
+            padding: 2rem 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 32px #000a;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            min-width: 350px;
+            align-items: center;
+        }
+        input[type="text"] {
+            width: 260px;
+            padding: 0.6rem;
+            border-radius: 0.4rem;
+            border: none;
+            font-size: 1.1rem;
+        }
+        button {
+            background: #5e60ce;
+            color: #fff;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #3a3fc1;
+        }
+        .result {
+            margin-top: 1.2rem;
+            background: #181c2f;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            color: #b6baff;
+            word-break: break-all;
+        }
+        .error {
+            color: #ff6b6b;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔮 The Magic Orb™ - OrbHash™ 🔮</h1>
+    <div class="orb-ref">Powered by <b>The Orb™</b> &mdash; <i>Seek its wisdom in every byte!</i><small>(ALL of them?? Do we have budget for that?)</small></div>
+    <div class="main-flex">
+        <form class="hash-form" method="post">
+            <label for="text">Enter text to hash:</label>
+            <input type="text" id="text" name="text" value="{{ input_text|e }}" required>
+            <button type="submit">Get The OrbHash™</button>
+            {% if hash_result %}
+            <div class="result">OrbHash™: <b>{{ hash_result }}</b></div>
+            {% endif %}
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+        </form>
+    </div>
+</body>
+</html>

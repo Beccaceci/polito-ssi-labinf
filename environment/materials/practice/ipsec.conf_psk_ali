@@ -1,0 +1,15 @@
+# Practice replacement; explicit IKEv2 transport configuration.
+config setup
+ uniqueids=yes
+conn host-host
+ keyexchange=ikev2
+ type=transport
+ left=@LOCAL_IP@
+ right=@REMOTE_IP@
+ leftsubnet=@LOCAL_IP@/32
+ rightsubnet=@REMOTE_IP@/32
+ ike=aes128-sha256-modp2048!
+ esp=aes128-sha256!
+ auto=add
+ leftauth=psk
+ rightauth=psk

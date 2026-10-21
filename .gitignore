@@ -24,3 +24,7 @@ __pycache__/
 GUIDA_CONFIGURAZIONE_MAC_ARM_LABINF.md
 IMPLEMENTATION_PLAN.md
 Istruzioni per i laboratori.pdf
+
+# Private node work, imported originals, generated infrastructure and execution evidence
+workspace/*
+!workspace/.gitkeep

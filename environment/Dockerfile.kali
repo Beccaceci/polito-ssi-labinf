@@ -69,37 +69,40 @@ COPY scripts/labinf-ettercap /usr/local/bin/labinf-ettercap
 COPY scripts/labinf-node-init.sh /usr/local/bin/labinf-node-init.sh
 RUN chmod 0755 /usr/local/bin/labinf-ettercap /usr/local/bin/labinf-node-init.sh
 
-# Web GUI Helper Launcher
-RUN printf '#!/bin/bash\n\
-case "$1" in\n\
-  start|"")\n\
-    if pgrep -x "Xtigervnc" >/dev/null; then\n\
-      echo "[!] Web GUI is already running."\n\
-    else\n\
-      mkdir -p /home/kali/.vnc /home/kali/.config/openbox\n\
-      vncserver :1 -geometry 1366x768 -depth 24 -SecurityTypes None -- /usr/bin/openbox-session >/tmp/vnc.log 2>&1 &\n\
-      sleep 2\n\
-      websockify --web=/usr/share/novnc/ 6080 localhost:5901 >/tmp/novnc.log 2>&1 &\n\
-      sleep 1\n\
-    fi\n\
-    echo "[+] Web GUI active at http://localhost:6080/vnc.html"\n\
-    ;;\n\
-  stop)\n\
-    vncserver -kill :1 2>/dev/null || true\n\
-    pkill -f websockify 2>/dev/null || true\n\
-    echo "[+] Web GUI stopped."\n\
-    ;;\n\
-  status)\n\
-    if pgrep -x "Xtigervnc" >/dev/null; then\n\
-      echo "[+] Web GUI is RUNNING on http://localhost:6080/vnc.html"\n\
-    else\n\
-      echo "[-] Web GUI is NOT running."\n\
-    fi\n\
-    ;;\n\
-  *)\n\
-    echo "Usage: labinf-gui [start|stop|status]"\n\
-    ;;\n\
-esac\n' > /usr/local/bin/labinf-gui && chmod +x /usr/local/bin/labinf-gui
+# Complete exercise tools; resolve the resulting toolchain into each run inventory.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    supervisor apache2 apache2-utils openssh-server strongswan-starter strongswan-charon python3-venv \
+    libcharon-extra-plugins openssl-provider-legacy perl python3-cryptography \
+    python3-pycryptodome python3-flask time file xxd man-db manpages less \
+    firefox-esr x11-xserver-utils xauth xdotool dnsmasq-base \
+    && rm -rf /var/lib/apt/lists/*
+COPY vendor/CA.pl.in /tmp/CA.pl.in
+RUN mkdir -p /usr/lib/ssl/misc && \
+    sed '1c#!/usr/bin/perl' /tmp/CA.pl.in > /usr/lib/ssl/misc/CA.pl && \
+    chmod 0755 /usr/lib/ssl/misc/CA.pl && rm /tmp/CA.pl.in && \
+    ln -sf /usr/lib/ssl/misc/CA.pl /usr/local/bin/CA.pl
+RUN python3 -m venv --system-site-packages /opt/labinf/venv && /opt/labinf/venv/bin/pip install --no-cache-dir pycryptodome==3.23.0
+ENV PATH=/opt/labinf/venv/bin:$PATH
+COPY scripts/labinf-apache scripts/labinf-service scripts/labinf-exercise-init scripts/labinf-gui scripts/labinf-browser /usr/local/bin/
+COPY scripts/labinf-supervisor.conf /etc/supervisor/labinf.conf
+COPY materials /opt/labinf/materials
+COPY verification /opt/labinf/verification
+RUN chmod 0755 /usr/local/bin/labinf-* /opt/labinf/materials/practice/*.py /opt/labinf/materials/practice/*.sh && \
+    useradd -m -s /bin/bash ali && echo 'ali:ali' | chpasswd && \
+    echo 'kali:kali' | chpasswd && \
+    mkdir -p /home/kali/.labinf-firefox /workspace /exchange && \
+    chown -R kali:kali /home/kali /workspace /exchange && \
+    printf '\nPasswordAuthentication yes\nPermitRootLogin prohibit-password\n' >> /etc/ssh/sshd_config && \
+    dpkg-query -W > /opt/labinf/packages.txt
+# Keep the CA configuration intact; add providers without lowering TLS security.
+RUN python3 - <<'PYCONF'
+from pathlib import Path
+p = Path('/etc/ssl/openssl.cnf')
+s = p.read_text().replace('openssl_conf = openssl_init', 'openssl_conf = labinf_init')
+s += "\n[labinf_init]\nproviders = labinf_providers\n[labinf_providers]\ndefault = labinf_default\nlegacy = labinf_legacy\n[labinf_default]\nactivate = 1\n[labinf_legacy]\nactivate = 1\n"
+Path('/etc/ssl/openssl-lab.cnf').write_text(s)
+PYCONF
+ENV OPENSSL_CONF=/etc/ssl/openssl-lab.cnf
 
 WORKDIR /home/kali
 USER kali

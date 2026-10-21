@@ -114,7 +114,7 @@ class Lab01EnvironmentTests(unittest.TestCase):
         return compose("exec", "--no-TTY", service, *args, check=check)
 
     def test_all_nodes_are_ready_and_verify_passes(self) -> None:
-        result = command("bash", "./labinf.sh", "verify", check=False)
+        result = command("bash", "./labinf.sh", "verify", "--case", "services", check=False)
         self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_assigned_service_ports_are_reachable(self) -> None:
@@ -304,7 +304,7 @@ class Lab01EnvironmentTests(unittest.TestCase):
         stopped = compose("stop", "bob", check=False)
         self.assertEqual(stopped.returncode, 0, stopped.stdout)
         try:
-            result = command("bash", "./labinf.sh", "verify", check=False)
+            result = command("bash", "./labinf.sh", "verify", "--case", "services", check=False)
             self.assertNotEqual(result.returncode, 0, result.stdout)
             self.assertIn("container non avviato", result.stdout)
         finally:

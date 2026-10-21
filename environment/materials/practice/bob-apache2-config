@@ -1,0 +1,7 @@
+# Practice replacement: ordinary destination server for the forward-proxy exercise.
+<VirtualHost *:80>
+ DocumentRoot /var/www/html
+ <Directory /var/www/html>
+  Require all granted
+ </Directory>
+</VirtualHost>

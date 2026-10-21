@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( EUID != 0 )); then exec sudo -n --preserve-env "$0" "$@"; fi
+mkdir -p /run/sshd /workspace /exchange /var/log/labinf /etc/dnsmasq.d
+chown kali:kali /workspace /exchange
+ssh-keygen -A
+while IFS= read -r dev; do
+  [[ $dev == lo ]] && continue
+  ethtool -K "$dev" gro off gso off tso off 2>/dev/null || true
+done < <(ip -o link show | awk -F': ' '{print $2}' | cut -d@ -f1)
+if [[ -n ${LABINF_ROUTE_TO:-} ]]; then
+  ip route replace "$LABINF_ROUTE_TO" via "$LABINF_ROUTE_VIA"
+fi
+if [[ -n ${LABINF_DEFAULT_VIA:-} ]]; then ip route replace default via "$LABINF_DEFAULT_VIA"; fi
+if [[ -n ${LABINF_RESOLVER:-} ]]; then printf 'nameserver %s\noptions timeout:1 attempts:1\n' "$LABINF_RESOLVER" > /etc/resolv.conf; fi
+if [[ -n ${LABINF_DNS_ANSWER:-} ]]; then
+  printf 'no-resolv\naddress=/www.example.test/%s\naddress=/www.example.com/%s\nlog-queries\nlog-facility=-\n' "$LABINF_DNS_ANSWER" "$LABINF_DNS_ANSWER" > /etc/dnsmasq.d/labinf.conf
+fi
+for var in LABINF_START_APACHE LABINF_START_SSH LABINF_START_DNS; do export "$var=${!var:-false}"; done
+exec /usr/bin/supervisord -n -c /etc/supervisor/labinf.conf

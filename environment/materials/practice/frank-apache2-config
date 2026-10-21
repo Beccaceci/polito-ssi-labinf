@@ -1,0 +1,22 @@
+# Practice replacement: authenticated TLS forward proxy, not a reverse proxy.
+<VirtualHost *:443>
+ ServerName frank.lab
+ SSLEngine on
+ SSLCertificateFile /etc/apache2/ssl/cert.pem
+ SSLCertificateKeyFile /etc/apache2/ssl/key.pem
+ ProxyRequests On
+ ProxyVia On
+ <Proxy "*">
+  Require all granted
+ </Proxy>
+ #FILTER <ProxyMatch "\\.gif$">
+ #FILTER  Require all denied
+ #FILTER </ProxyMatch>
+ #AUTH <Proxy "*">
+ #AUTH  AuthType Basic
+ #AUTH  AuthName "LABINF forward proxy"
+ #AUTH  AuthBasicProvider file
+ #AUTH  AuthUserFile /etc/apache2/htpasswd
+ #AUTH  Require valid-user
+ #AUTH </Proxy>
+</VirtualHost>

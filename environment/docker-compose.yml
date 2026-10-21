@@ -3,6 +3,7 @@ name: labinf
 services:
   # Target Server (Alice): hosts lab services (Apache, Exim4, custom daemons)
   alice:
+    image: ${LABINF_ALICE_IMAGE:-labinf-lab01-target:local}
     build:
       context: ./targets/lab01
       dockerfile: Dockerfile

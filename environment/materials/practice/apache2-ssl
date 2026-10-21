@@ -1,0 +1,13 @@
+# Practice replacement for the handout's Apache TLS/mTLS configuration.
+<VirtualHost *:443>
+ ServerName alice.lab
+ DocumentRoot /var/www/html
+ SSLEngine on
+ SSLProtocol -all +TLSv1.2
+ SSLCipherSuite AES:SHA1:!ADH:!MD5
+ SSLCertificateFile /etc/ssl/certs/labinf-server.crt
+ SSLCertificateKeyFile /etc/ssl/private/labinf-server.key
+ SSLCACertificateFile /etc/ssl/certs/labinf-ca.crt
+ SSLVerifyClient none
+ SSLVerifyDepth 2
+</VirtualHost>

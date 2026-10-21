@@ -1,0 +1,266 @@
+[
+  {
+    "path": "environment/targets/lab02/Dockerfile",
+    "sha256": "0195702e15317fa3125f77b1c4b72bd5ffc8b2880570e984238299048041b7b7",
+    "provenance": "runtime-adaptation",
+    "source": "Pinned runtime wrapper preserving the supplied application and files"
+  },
+  {
+    "path": "environment/targets/lab02/Dockerfile.professor",
+    "sha256": "8feab8c91282d65a95c99a9b2a91d06bfb4b6bdbd66c01bb49de574f9036c77b",
+    "provenance": "runtime-adaptation",
+    "source": "Pinned runtime wrapper preserving the supplied application and files"
+  },
+  {
+    "path": "environment/targets/lab02/materials/app.py",
+    "sha256": "5a6bdff50fa938b05d62bfc07dc78d5d145b3bf94c8538d332ce9e61b3bbd7ce",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/static/img/crystal-ball.png",
+    "sha256": "13f2f6af53ca65554827fb1d8fd8bdc06e131e1d25f099b6366b1a499c62c01c",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/templates/bruteforce.html",
+    "sha256": "9bf78cc15759867931108fd0f9fae40c26cf5e68cc746e7de9c741526fb2afaa",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/templates/challenge.html",
+    "sha256": "f274b04139871b6f8553554c46835ca06f0a39c804e279da063ccb4ab67c2862",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/templates/hash.html",
+    "sha256": "1e2852160e2a6bcf17c095ef40f64bfcaf521601fa58295d8a769b81b1c32422",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/templates/index.html",
+    "sha256": "a5967d7db1a2b0cd5900f996e6346f09a30ee530e36aca093a2c7c5472fb9ebf",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/ctext.3des",
+    "sha256": "dc36452b2d2e8dc8ba946fdd00f6022cba93ab2cb0590cdfb18308db54df27bb",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/ctext.aes128",
+    "sha256": "136b4b58cc07c1f45ce3f01ec46d1a2ab0e58ecef14e6310945231abd23a1583",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/ctext.aes128.nopad",
+    "sha256": "89a53850ce79d41f5b757b0ea779e6b43d22d9cc85c05afab07dd9df18bab440",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/ctext.des",
+    "sha256": "5669cde126f3f2ac808249c2df56dfe864e42ed35b46fdb387d09eca485d6858",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/ctext.rc4",
+    "sha256": "71ca15e2985daccaeb9f9378039b6672e802945aed589e3723295ea3e4e2b560",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/decrypt_server.py",
+    "sha256": "d8c42d7aeb93a3bc0de0f2c7ef021746472efabca9120530c1e5ce7576284c78",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/encrypted_key.bin",
+    "sha256": "b4c45ee295147bffadde67ba79c65d1d34b33a4947227b91a55c6f704c4be97a",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/encrypted_password.bin",
+    "sha256": "a2b82df57468f46969e63cd572a6cf85a0fc4c99cbbd29333eff5317d79bcf40",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/pw",
+    "sha256": "1aa5fa323798e9655fdc8e5af1c5afe0a7cef44f149585ba4ab43cd1c401022f",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/rsa.key.test",
+    "sha256": "11fce683b78c542aaf85ec0c3640b0b6c12191a7457262e416680f0e864d5491",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/rsa.pubkey.test",
+    "sha256": "2730bfc838f8abc87c2f29ddc00be6b82343f35d312229fa9af04ed19285b697",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/materials/test-files/test.txt",
+    "sha256": "400077972af8425263048953869b26e694edfc49fa75a3effc46afb175ea35c9",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 Mac package"
+  },
+  {
+    "path": "environment/targets/lab02/requirements.lock",
+    "sha256": "276c4d8fd881e6163e37fb21a369a4cbefcef36f2799b52917cc17f81ffe6e51",
+    "provenance": "runtime-adaptation",
+    "source": "Pinned runtime wrapper preserving the supplied application and files"
+  },
+  {
+    "path": "environment/materials/original/lab02/optional/ecb_enc",
+    "sha256": "d4f6d4d1f12240ab3e30346b7c323b7fe5ff2944272a55d62850abcb8aee4eb9",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 optional files"
+  },
+  {
+    "path": "environment/materials/original/lab02/optional/ecb_plain_1",
+    "sha256": "030d0d1586563c9450abb750d074ac759268238c5dcb4f757cb7da86546f706d",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 optional files"
+  },
+  {
+    "path": "environment/materials/original/lab02/optional/ecb_plain_2",
+    "sha256": "c9c4e8699a30554ecd667f6bc68ea9cecbcb77d6af5c737ad02d2a39ea9a9210",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 optional files"
+  },
+  {
+    "path": "environment/materials/original/lab02/optional/gen_tree.sh",
+    "sha256": "511183ed903eeb65a76d85504842046a7c30179b53b141dc85a02a72d18a5086",
+    "provenance": "supplied-original",
+    "source": "Professor Lab 02 optional files"
+  },
+  {
+    "path": "environment/materials/practice/IHA.sh",
+    "sha256": "ba53631916a34f71583e607699855745c703736e42b4f5bbc8e8216e78142183",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/README.md",
+    "sha256": "432cec8a5c5449ffbf6dfe9be18866c0c355bd991156a8293048c8baec3031d0",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/aes-gcm.py",
+    "sha256": "f76cb1d14fbcd6741204d681a66a40df57566561194d7699b1e28de882e4eef3",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/alice-secret.py",
+    "sha256": "32a7666d22ca16acfb0da826a4563bea26e68763ca25c98caf0c5fa96bd1cba5",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/apache2-ssl",
+    "sha256": "7493c4bbdae028a1375f10ca98d38354882899e032b59076f9f5c44d13f7539d",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/bob-apache2-config",
+    "sha256": "5e255883babce145023935bbfa5d55177ed2621ae676165106a6ea90dfc50e37",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/etter.conf",
+    "sha256": "ebeee865e288dc8199c8a111ea1b5e102d4be34130f4dc35561cd89d9d658ff2",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/frank-apache2-config",
+    "sha256": "4d02e7e00d8f7274133e75772ea8a4dbefd345979907a0143fb52bfcd2c1d98b",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.conf_cert_ali",
+    "sha256": "48ff153a94fb64b4439f1543541a87d83a4c0fc1faa3db5008b23abd281fe982",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.conf_cert_bob",
+    "sha256": "48ff153a94fb64b4439f1543541a87d83a4c0fc1faa3db5008b23abd281fe982",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.conf_psk_ali",
+    "sha256": "b4ee148686195cde12a89ed0d94a306a4ae3bffd21f8b0c4df0397fe89be8c43",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.conf_psk_bob",
+    "sha256": "b4ee148686195cde12a89ed0d94a306a4ae3bffd21f8b0c4df0397fe89be8c43",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.secrets_cert_ali",
+    "sha256": "2e8c4ef1455fc40488aee73d47c8a9596c33155f45ada7d833d934ae05e43ad7",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.secrets_cert_bob",
+    "sha256": "2e8c4ef1455fc40488aee73d47c8a9596c33155f45ada7d833d934ae05e43ad7",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.secrets_psk_ali",
+    "sha256": "75e907ca3741cfbdaa6fcf17db2448bf4930f9c51b3450fe3a1ce2f698a06884",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/materials/practice/ipsec.secrets_psk_bob",
+    "sha256": "75e907ca3741cfbdaa6fcf17db2448bf4930f9c51b3450fe3a1ce2f698a06884",
+    "provenance": "practice-replacement",
+    "source": "Independent implementation from the handout interface; not a professor-provided original"
+  },
+  {
+    "path": "environment/Dockerfile.kali",
+    "sha256": "0674c601984eb7e4eaa5cfdc4dfa7c0fd18c94c839e1c97d1d38a3c01979ffd3",
+    "provenance": "runtime-adaptation",
+    "source": "Pinned Kali base with recorded package manifest; derived runtime image"
+  },
+  {
+    "path": "environment/vendor/CA.pl.in",
+    "sha256": "6e62a0e424903e787c78e6e09ff9998a070fe3b2ff33f5f06b0674acf66bf475",
+    "provenance": "upstream-source",
+    "source": "OpenSSL upstream CA.pl; source URL/hash and license are documented beside the file"
+  },
+  {
+    "path": "environment/runtime/lima.yaml",
+    "sha256": "8dc7c900d98acf345b55daf70010c2933dee7f5fe59b5f2ee81b962fcd71c7ca",
+    "provenance": "runtime-adaptation",
+    "source": "Rootful Lima VM configuration with dated pinned Ubuntu cloud image"
+  }
+]

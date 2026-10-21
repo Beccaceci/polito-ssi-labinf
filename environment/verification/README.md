@@ -1,0 +1,1 @@
+Acceptance runs are orchestrated by labinf/verification.py and the cases modules on the host. Every invocation runs with bash -euo pipefail and records exact inputs/outputs in workspace/runs/. Tests exercise actual node services and network namespaces.

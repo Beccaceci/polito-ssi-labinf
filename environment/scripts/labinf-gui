@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( EUID == 0 )); then exec runuser -u kali -- "$0" "$@"; fi
+case ${1:-start} in
+ start)
+  if ! pgrep -u kali -x Xtigervnc >/dev/null; then
+    mkdir -p "$HOME/.vnc" "$HOME/.config/openbox"
+    tigervncserver :1 -geometry 1366x768 -depth 24 -SecurityTypes None -localhost yes -- /usr/bin/openbox-session
+  fi
+  if ! pgrep -u kali -f '[w]ebsockify.*6080' >/dev/null; then
+    nohup websockify --web=/usr/share/novnc/ 6080 localhost:5901 >/tmp/novnc.log 2>&1 </dev/null &
+  fi
+  for attempt in {1..30}; do nc -z 127.0.0.1 6080 && exit 0; sleep .2; done
+  cat /tmp/novnc.log >&2; exit 1;;
+ stop)
+  tigervncserver -kill :1
+  pkill -u kali -f '[w]ebsockify.*6080' || true;;
+ status) pgrep -u kali -x Xtigervnc >/dev/null && nc -z 127.0.0.1 6080;;
+ *) echo 'Usage: labinf-gui start|stop|status' >&2; exit 2;;
+esac

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🔮 The Orb™ Challenge 🔮</title>
+    <link rel="icon" href="static/img/crystal-ball.png" type="image/x-icon"/>
+    <style>
+        body { background: #181c2f; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; margin: 0; }
+        .container { max-width: 600px; margin: 2.5rem auto; background: #23284a; border-radius: 1.2rem; box-shadow: 0 4px 32px #000a; padding: 2.5rem 2.5rem 2rem 2.5rem; }
+        h2 { text-align: center; font-size: 2rem; margin-bottom: 1.2rem; }
+        .desc {
+            color: #b6baff;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.13rem;
+            background: linear-gradient(90deg, #23284a 60%, #2e2e5e 100%);
+            border-radius: 0.8rem;
+            box-shadow: 0 2px 16px #0005;
+            padding: 1.2rem 1.5rem 1.2rem 1.5rem;
+            line-height: 1.7;
+        }
+        .desc b, .desc strong {
+            color: #ffe066;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .desc i {
+            color: #a0e7e5;
+        }
+        .desc .orb-keyword {
+            color: #5e60ce;
+            font-weight: 700;
+            text-shadow: 0 0 8px #5e60ce44;
+        }
+        label { font-weight: 500; display: block; margin-bottom: 0.5rem; }
+        input[type="file"], input[type="text"], select { width: 100%; padding: 0.5rem; border-radius: 0.5rem; border: none; font-size: 1rem; margin-bottom: 1.2rem; }
+        button { background: #5e60ce; color: #fff; border: none; padding: 0.7rem 1.5rem; border-radius: 0.5rem; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 0.5rem; transition: background 0.2s; }
+        button:hover { background: #3a3fc1; }
+        .warning { color: #ff6b6b; margin-bottom: 1.2rem; font-weight: bold; text-align: center; }
+        .output-box { background: #181c2f; border-radius: 0.7rem; padding: 1rem; margin: 1.2rem 0; word-break: break-all; }
+        .cat-img { display: block; margin: 2rem auto 0 auto; border-radius: 1.2rem; box-shadow: 0 0 32px #5e60ce88; max-width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔮 The Orb™ Challenge 🔮</h2>
+        <div class="desc">
+            <p><span class="orb-keyword">The Orb™</span> wants to share a <b>secret</b> with you, <b>but only with you!</b></p>
+            <p><span class="orb-keyword">The Orb™</span> will generate a <b>password</b> to access this <b>secret</b> and encrypt it with a <b>secret key</b>.<br>
+            But behold! <span class="orb-keyword">The Orb™</span> has learned some <b>good security practices</b>: it needs you to upload your <b>RSA 2048 public key</b>, and will use it to <b>protect the secret key</b> so that <b>only you</b> can decrypt the password!</p>
+            <p><i>Will you discover the <b>ancient secret</b> that <span class="orb-keyword">The Orb™</span> has in store for you?</i></p>
+        </div>
+        {% if warning %}
+            <div class="warning">{{ warning }}</div>
+        {% endif %}
+        {% if not show_pwd_form %}
+        <form method="post" enctype="multipart/form-data">
+            <label for="pubkey">Public Key (PEM):</label>
+            <input type="file" name="pubkey" id="pubkey" required>
+            <button type="submit">Start Challenge</button>
+        </form>
+        {% endif %}
+        {% if iv_hex %}
+        <div class="output-box">
+            <b>Encryption Algorithm:</b> AES-256-CBC<br>
+            <b>IV (hex):</b><br>
+            <span style="font-family:monospace;">{{ iv_hex }}</span>
+        </div>
+        {% endif %}
+        {% if encrypted_key_hex %}
+        <div class="output-box">
+            <b>Encrypted AES Key:</b><br>
+            <a href="?download=key" download>Download encrypted_key.bin</a>
+        </div>
+        {% endif %}
+        {% if encrypted_pwd_hex %}
+        <div class="output-box">
+            <b>Encrypted Password:</b><br>
+            <a href="?download=pwd" download>Download encrypted_password.bin</a>
+        </div>
+        {% endif %}
+        {% if show_pwd_form %}
+        <form method="post">
+            <label for="user_password">Enter the decrypted password:</label>
+            <input type="text" name="user_password" id="user_password" required>
+            <button type="submit">Check Password</button>
+        </form>
+        {% endif %}
+        {% if correct and cat_url %}
+        <div class="output-box" style="text-align:center;">
+            <b>Congratulations you uncovered the ancient secret!</b><br>
+            <img src="{{ cat_url }}" class="cat-img" alt="A random cat">
+            <small><small></small><i>SSI{k3y_sh4r1ng_m4g1c_4nd_c4t5}</i></small></small>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
